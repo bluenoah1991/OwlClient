@@ -13,5 +13,12 @@
     "electron"
   ],
   "author": "CodeMeow",
-  "license": "LGPL-3.0"
+  "license": "LGPL-3.0",
+  "dependencies": {
+    "mqtt": "^1.7.0"
+  },
+  "devDependencies": {
+    "node-inspector": "^0.12.5",
+    "node-pre-gyp": "git+https://git@github.com/enlight/node-pre-gyp.git#detect-electron-runtime-in-find"
+  }
 }

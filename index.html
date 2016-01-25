@@ -3,6 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <title>Owl Mqtt Client</title>
+    <script type="text/javascript">
+
+        const ipcRenderer = require('electron').ipcRenderer;
+
+        ipcRenderer.on('message', function(event, arg){
+            var output = document.getElementById('output');
+            output.value = arg.topic + ':' + arg.payload + '\r\n' + output.value;
+        });
+
+        function connect(){
+            var client_id_ = document.getElementById('text_client_id_').value;
+            var ip_address_ = document.getElementById('text_ip_address_').value;
+            var port_ = document.getElementById('text_port_').value;
+            var timeout_ = document.getElementById('text_timeout_').value;
+            ipcRenderer.send('mqtt-connect', {
+                "client_id": client_id_,
+                "ip_address": ip_address_,
+                "port": port_,
+                "timeout": timeout_
+            });
+        }
+
+        function disconnect(){
+            ipcRenderer.send('mqtt-disconnect');
+        }
+
+        function subscribe(){
+            var subscribe_ = document.getElementById('text_subscribe').value;
+            ipcRenderer.send('mqtt-subscribe', subscribe_);
+        }
+
+        function unsubscribe(){
+            var unsubscribe_ = document.getElementById('text_unsubscribe').value;
+            ipcRenderer.send('mqtt-unsubscribe', unsubscribe_);
+        }
+
+        function publish(){
+            var topic_ = document.getElementById('text_topic').value;
+            var publish_ = document.getElementById('text_publish').value;
+            ipcRenderer.send('mqtt-publish', {
+                'topic': topic_,
+                'message': publish_
+            });
+        }
+
+        window.onload = function(){
+            //pass
+            var button_connect = document.getElementById('button_connect');
+            var button_disconnect = document.getElementById('button_disconnect');
+            var button_subscribe = document.getElementById('button_subscribe');
+            var button_unsubscribe = document.getElementById('button_unsubscribe');
+            var button_publish = document.getElementById('button_publish');
+            button_connect.onclick = connect;
+            button_disconnect.onclick = disconnect;
+            button_subscribe.onclick = subscribe;
+            button_unsubscribe.onclick = unsubscribe;
+            button_publish.onclick = publish;
+        }
+
+    </script>
 </head>
 <body>
     <fieldset>
@@ -10,39 +70,48 @@
         <table>
             <tr>
                 <td>Client ID</td>
-                <td><input type="text" /></td>
+                <td><input id="text_client_id_" type="text" value="10000" /></td>
             </tr>
             <tr>
                 <td>IP Address</td>
-                <td><input type="text" /></td>
+                <td><input id="text_ip_address_" type="text" value="192.168.102.13" /></td>
             </tr>
             <tr>
                 <td>Port</td>
-                <td><input type="text" /></td>
+                <td><input id="text_port_" type="text" value="8888" /></td>
             </tr>
             <tr>
                 <td>Timeout</td>
-                <td><input type="text" /></td>
+                <td><input id="text_timeout_" type="text" value="600" /></td>
             </tr>
             <tr>
                 <td colspan="2">
-                    <input type="button" value="Connect" />
-                    <input type="button" value="Disconnect" />
+                    <input id="button_connect" type="button" value="Connect" />
+                    <input id="button_disconnect" type="button" value="Disconnect" />
                 </td>
             </tr>
         </table>
     </fieldset>
     <table>
-        <tr>
-            <td>Subscribe</td>
-            <td><input type="text" /></td>
-            <td><input type="button" value="Subscribe" /></td>
-        </tr>
+      <tr>
+          <td>Subscribe</td>
+          <td colspan="2"><input id="text_subscribe" type="text" /></td>
+          <td><input id="button_subscribe" type="button" value="Subscribe" /></td>
+      </tr>
+      <tr>
+          <td>Unsubscribe</td>
+          <td colspan="2"><input id="text_unsubscribe" type="text" /></td>
+          <td><input id="button_unsubscribe" type="button" value="Unsubscribe" /></td>
+      </tr>
         <tr>
             <td>Publish</td>
-            <td><input type="text" /></td>
-            <td><input type="button" value="Publish" /></td>
+            <td><input id="text_topic" type="text" /></td>
+            <td><input id="text_publish" type="text" /></td>
+            <td><input id="button_publish" type="button" value="Publish" /></td>
         </tr>
     </table>
+    <textarea id="output">
+        Hi, there
+    </textarea>
 </body>
 </html>
