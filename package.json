@@ -18,6 +18,7 @@
     "mqtt": "^1.7.0"
   },
   "devDependencies": {
+    "electron-packager": "^5.2.1",
     "node-inspector": "^0.12.5",
     "node-pre-gyp": "git+https://git@github.com/enlight/node-pre-gyp.git#detect-electron-runtime-in-find"
   }
