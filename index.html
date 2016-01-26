@@ -4,12 +4,38 @@
     <meta charset="UTF-8">
     <title>Owl Mqtt Client</title>
     <script type="text/javascript">
+        Date.prototype.format =function(format)
+            {
+                var o = {
+                    "M+" : this.getMonth()+1, //month
+                    "d+" : this.getDate(),    //day
+                    "h+" : this.getHours(),   //hour
+                    "m+" : this.getMinutes(), //minute
+                    "s+" : this.getSeconds(), //second
+                    "q+" : Math.floor((this.getMonth()+3)/3),  //quarter
+                    "S" : this.getMilliseconds() //millisecond
+                }
+                if(/(y+)/.test(format))
+                    format=format.replace(RegExp.$1,
+                      (this.getFullYear()+"").substr(4- RegExp.$1.length));
+                for(var k in o)
+                    if(new RegExp("("+ k +")").test(format))
+                        format = format.replace(RegExp.$1,
+                            RegExp.$1.length==1 ? o[k] :
+                            ("00"+ o[k]).substr((""+ o[k]).length));
+                return format;
+        }
 
         const ipcRenderer = require('electron').ipcRenderer;
 
         ipcRenderer.on('message', function(event, arg){
             var output = document.getElementById('output');
-            output.value = arg.topic + ':' + arg.payload + '\r\n' + output.value;
+            output.value = '[' + new Date().format('yyyy-MM-dd hh:mm:ss.S') + ']' + arg.topic + ':' + arg.payload + '\r\n' + output.value;
+        });
+
+        ipcRenderer.on('log', function(event, arg){
+            var output = document.getElementById('output');
+            output.value = '[' + new Date().format('yyyy-MM-dd hh:mm:ss.S') + ']' + arg + '\r\n' + output.value;
         });
 
         function connect(){
@@ -17,11 +43,25 @@
             var ip_address_ = document.getElementById('text_ip_address_').value;
             var port_ = document.getElementById('text_port_').value;
             var timeout_ = document.getElementById('text_timeout_').value;
+            var keepalive_ = document.getElementById('text_keepalive_').value;
+            var clean_session_ = document.getElementById('checkbox_clean_session_').checked;
+            var will_flag_ = document.getElementById('checkbox_will_flag_').checked;
+            var will_topic_ = document.getElementById('text_will_topic_').value;
+            var will_payload_ = document.getElementById('text_will_payload_').value;
+            var will_qos_ = document.getElementById('text_will_qos_').value;
+            var will_retain_ = document.getElementById('checkbox_will_retain_').checked;
             ipcRenderer.send('mqtt-connect', {
                 "client_id": client_id_,
                 "ip_address": ip_address_,
                 "port": port_,
-                "timeout": timeout_
+                "timeout": timeout_,
+                "keepalive": keepalive_,
+                "clean_session": clean_session_,
+                "will_flag_": will_flag_,
+                "will_topic_": will_topic_,
+                "will_payload_": will_payload_,
+                "will_qos_": will_qos_,
+                "will_retain_": will_retain_
             });
         }
 
@@ -30,21 +70,21 @@
         }
 
         function subscribe(){
-            var subscribe_ = document.getElementById('text_subscribe').value;
-            ipcRenderer.send('mqtt-subscribe', subscribe_);
+            var topic_ = document.getElementById('text_topic').value;
+            ipcRenderer.send('mqtt-subscribe', topic_);
         }
 
         function unsubscribe(){
-            var unsubscribe_ = document.getElementById('text_unsubscribe').value;
-            ipcRenderer.send('mqtt-unsubscribe', unsubscribe_);
+            var topic_ = document.getElementById('text_topic').value;
+            ipcRenderer.send('mqtt-unsubscribe', topic_);
         }
 
         function publish(){
             var topic_ = document.getElementById('text_topic').value;
-            var publish_ = document.getElementById('text_publish').value;
+            var payload_ = document.getElementById('text_payload').value;
             ipcRenderer.send('mqtt-publish', {
                 'topic': topic_,
-                'message': publish_
+                'message': payload_
             });
         }
 
@@ -85,6 +125,37 @@
                 <td><input id="text_timeout_" type="text" value="600" /></td>
             </tr>
             <tr>
+                <td>KeepAlive</td>
+                <td><input id="text_keepalive_" type="text" value="10" /></td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <input id="checkbox_clean_session_" type="checkbox" />Clean Session
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <input id="checkbox_will_flag_" type="checkbox" />Will Flags
+                </td>
+            </tr>
+            <tr>
+                <td>Will Topic</td>
+                <td><input id="text_will_topic_" type="text" value="system/will-notifi" /></td>
+            </tr>
+            <tr>
+                <td>Will Payload</td>
+                <td><input id="text_will_payload_" type="text" value="I am dead" /></td>
+            </tr>
+            <tr>
+                <td>Will Qos</td>
+                <td><input id="text_will_qos_" type="text" value="2" /></td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <input id="checkbox_will_retain_" type="checkbox" />Will Retain
+                </td>
+            </tr>
+            <tr>
                 <td colspan="2">
                     <input id="button_connect" type="button" value="Connect" />
                     <input id="button_disconnect" type="button" value="Disconnect" />
@@ -92,26 +163,29 @@
             </tr>
         </table>
     </fieldset>
-    <table>
-      <tr>
-          <td>Subscribe</td>
-          <td colspan="2"><input id="text_subscribe" type="text" /></td>
-          <td><input id="button_subscribe" type="button" value="Subscribe" /></td>
-      </tr>
-      <tr>
-          <td>Unsubscribe</td>
-          <td colspan="2"><input id="text_unsubscribe" type="text" /></td>
-          <td><input id="button_unsubscribe" type="button" value="Unsubscribe" /></td>
-      </tr>
-        <tr>
-            <td>Publish</td>
-            <td><input id="text_topic" type="text" /></td>
-            <td><input id="text_publish" type="text" /></td>
-            <td><input id="button_publish" type="button" value="Publish" /></td>
-        </tr>
-    </table>
-    <textarea id="output">
-        Hi, there
-    </textarea>
+    <fieldset>
+        <legend>Action</legend>
+        <table>
+            <tr>
+                <td>Topic</td>
+                <td><input id="text_topic" type="text" /></td>
+            </tr>
+            <tr>
+                <td>Payload</td>
+                <td><input id="text_payload" type="text" /></td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <input id="button_subscribe" type="button" value="Subscribe" />
+                    <input id="button_unsubscribe" type="button" value="Unsubscribe" />
+                    <input id="button_publish" type="button" value="Publish" />
+                </td>
+            </tr>
+        </table>
+    </fieldset>
+    <fieldset>
+        <legend>Output Window</legend>
+        <textarea style="border:none; width:100%; height:150px; overflow:scroll;" id="output">Hi, there</textarea>
+    </fieldset>
 </body>
 </html>

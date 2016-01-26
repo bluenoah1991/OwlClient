@@ -19,18 +19,41 @@ app.on('window-all-closed', function(){
     }
 });
 
+var local = this;
+
 electron.ipcMain.on('mqtt-connect', function(event, arg){
-    console.log(arg);
-    client = mqtt.connect({
+    local.log = function(logstr){
+        event.sender.send('log', logstr);
+    }
+
+    local.log('Begin connecting');
+
+    var options = {
         'host': arg.ip_address,
         'port': arg.port,
         'clientId': arg.client_id,
         'protocolId': 'MQIsdp',
         'protocolVersion': 3,
-        'connectTimeout': arg.timeout
+        'connectTimeout': arg.timeout,
+        'keepalive': parseInt(arg.keepalive),
+        'clean': arg.clean_session
+    };
+    if(!!arg.will_flag){
+        options.will = {
+            'topic': arg.will_topic,
+            'payload': arg.will_payload,
+            'qos': arg.will_qos,
+            'retain': arg.will_retain
+        };
+    }
+    client = mqtt.connect(options);
+    client.on('connect', function(){
+        if(!!local.log){
+          local.log('Connect successfully');
+        }
     });
     client.on('close', function(){
-        console.log('close callback');
+        local.log('The connection is closed(from close callback)');
     });
     client.on('message', function(topic, payload){
         event.sender.send('message', {
@@ -38,39 +61,53 @@ electron.ipcMain.on('mqtt-connect', function(event, arg){
             'payload': payload
         });
     });
-    console.log(client);
+
 });
 
 electron.ipcMain.on('mqtt-disconnect', function(event){
-    console.log('disconnect');
+    if(!!local.log){
+        local.log('Disconnect');
+    }
     if(!!client){
       client.end();
     }
 });
 
 electron.ipcMain.on('mqtt-subscribe', function(event, arg){
-    console.log('subscribe');
+    if(!!local.log){
+        local.log('Subscribe');
+    }
     if(!!client){
-      client.subscribe(arg, function(err, granted){
-        console.log('subscribe callback');
-      });
+        client.subscribe(arg, function(err, granted){
+            if(!!local.log){
+                local.log('Subscription success(from subscribe callback)');
+            }
+        });
     }
 });
 
 electron.ipcMain.on('mqtt-unsubscribe', function(event, arg){
-    console.log('unsubscribe');
+    if(!!local.log){
+        local.log('Unsubscribe');
+    }
     if(!!client){
       client.unsubscribe(arg, function(err, granted){
-        console.log('unsubscribe callback');
+          if(!!local.log){
+              local.log('Unsubscription success(from unsubscribe callback)');
+          }
       });
     }
 });
 
 electron.ipcMain.on('mqtt-publish', function(event, arg){
-    console.log('publish');
+    if(!!local.log){
+          local.log('Publish "' + arg.message + '" to "' + arg.topic + '"');
+    }
     if(!!client){
       client.publish(arg.topic, arg.message, function(err, granted){
-        console.log('publish callback');
+          if(!!local.log){
+                local.log('Publish success(from publish callback)');
+          }
       });
     }
 });
@@ -79,7 +116,7 @@ app.on('ready', function(){
     mainWindow = new BrowserWindow({width: 800, height: 600});
     mainWindow.loadURL('file://' + __dirname + '/index.html');
 
-    //mainWindow.webContents.openDevTools();
+    mainWindow.webContents.openDevTools();
 
     mainWindow.on('closed', function(){
 
