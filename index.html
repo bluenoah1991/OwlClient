@@ -28,11 +28,6 @@
 
         const ipcRenderer = require('electron').ipcRenderer;
 
-        ipcRenderer.on('message', function(event, arg){
-            var output = document.getElementById('output');
-            output.value = '[' + new Date().format('yyyy-MM-dd hh:mm:ss.S') + ']' + arg.topic + ':' + arg.payload + '\r\n' + output.value;
-        });
-
         ipcRenderer.on('log', function(event, arg){
             var output = document.getElementById('output');
             output.value = '[' + new Date().format('yyyy-MM-dd hh:mm:ss.S') + ']' + arg + '\r\n' + output.value;
@@ -71,20 +66,30 @@
 
         function subscribe(){
             var topic_ = document.getElementById('text_topic').value;
-            ipcRenderer.send('mqtt-subscribe', topic_);
+            var qos_ = document.getElementById('text_qos').value;
+            ipcRenderer.send('mqtt-subscribe', {
+                "topic": topic_,
+                "qos": qos_
+            });
         }
 
         function unsubscribe(){
             var topic_ = document.getElementById('text_topic').value;
-            ipcRenderer.send('mqtt-unsubscribe', topic_);
+            ipcRenderer.send('mqtt-unsubscribe', {
+                "topic": topic_
+            });
         }
 
         function publish(){
             var topic_ = document.getElementById('text_topic').value;
             var payload_ = document.getElementById('text_payload').value;
+            var qos_ = document.getElementById('text_qos').value;
+            var retain_ = document.getElementById('checkbox_retain').checked;
             ipcRenderer.send('mqtt-publish', {
                 'topic': topic_,
-                'message': payload_
+                'message': payload_,
+                'qos': qos_,
+                'retain': retain_
             });
         }
 
@@ -175,6 +180,15 @@
                 <td><input id="text_payload" type="text" /></td>
             </tr>
             <tr>
+                <td>QoS</td>
+                <td><input id="text_qos" type="text" value="0" /></td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <input id="checkbox_retain" type="checkbox" />Retain
+                </td>
+            </tr>
+            <tr>
                 <td colspan="2">
                     <input id="button_subscribe" type="button" value="Subscribe" />
                     <input id="button_unsubscribe" type="button" value="Unsubscribe" />
@@ -185,7 +199,7 @@
     </fieldset>
     <fieldset>
         <legend>Output Window</legend>
-        <textarea style="border:none; width:100%; height:180px; overflow:scroll;" id="output">Hi, there</textarea>
+        <textarea style="border:none; width:100%; height:200px; overflow:scroll;" id="output">Hi, there</textarea>
     </fieldset>
     <p>Copyright CodeMeow 2015</p>
 </body>
