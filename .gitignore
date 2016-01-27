@@ -1,3 +1,5 @@
 .idea/*
 node_modules/*
 owl-client-win32-x64/*
+owl-client-win32-ia32/*
+*.rar
